@@ -15,26 +15,29 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 namespace Gorder
 {
 
-UnitHeap::UnitHeap(int size){
+UnitHeap::UnitHeap(int size, vector<int>& candidate){
 	heapsize=size;
 	if(size>0){
 		Header.clear();
 		Header.resize( max(size>>4, INITIALVALUE+4));
 		LinkedList=new ListElement[size];
-		update=new int[size];
-	
-		for(int i=0; i<size; i++){
-			LinkedList[i].prev=i-1;
-			LinkedList[i].next=i+1;
-			LinkedList[i].key=INITIALVALUE;
-			update[i]=-INITIALVALUE;
-		}
-		LinkedList[size-1].next=-1;
-		
-		Header[INITIALVALUE].first=0;
-		Header[INITIALVALUE].second=size-1;
-		top=0;
-	}
+		update=new int[size]();
+    LinkedList[candidate.at(0)].prev = -1;
+    LinkedList[candidate.at(0)].next = candidate.at(1);
+    LinkedList[candidate.at(0)].active = true;
+    for (size_t i = 1; i < candidate.size()-1; i++) {
+      LinkedList[candidate.at(i)].active = true;
+      LinkedList[candidate.at(i)].prev = candidate.at(i-1);
+      LinkedList[candidate.at(i)].next = candidate.at(i+1);
+    }
+    LinkedList[candidate.at(candidate.size()-1)].prev=candidate.at(candidate.size()-2);
+    LinkedList[candidate.at(candidate.size()-1)].next=-1;
+    LinkedList[candidate.at(candidate.size()-1)].active = true;
+  }
+    Header[INITIALVALUE].first=candidate.at(0);
+    Header[INITIALVALUE].second=candidate.at(candidate.size()-1);
+    top=0;
+
 }
 
 UnitHeap::~UnitHeap(){
@@ -73,7 +76,6 @@ int UnitHeap::ExtractMax(){
 		if(update[top]<0)
 			DecreaseTop();
 	}while(top!=tmptop);
-
 	DeleteElement(tmptop);
 	return tmptop;
 }
@@ -117,21 +119,15 @@ void UnitHeap::DecreaseTop(){
 		if(Header[newkey].first<0)
 			Header[newkey].first=tmptop;
 	}
-
 }
 
-void UnitHeap::ReConstruct(){
-	vector<int> tmp(heapsize);
-	for(int i=0; i<heapsize; i++)
-		tmp[i]=i;
-
+void UnitHeap::ReConstruct(vector<int>& tmp){
 	sort(tmp.begin(), tmp.end(), [&](const int a, const int b)->bool{
 		if(LinkedList[a].key > LinkedList[b].key)
 			return true;
 		else
 			return false;
 	});
-
 	int key=LinkedList[tmp[0]].key;
 	LinkedList[tmp[0]].next=tmp[1];
 	LinkedList[tmp[0]].prev=-1;
@@ -161,8 +157,6 @@ void UnitHeap::ReConstruct(){
 		int lastkey=LinkedList[lastone].key;
 		Header[lastkey].first=Header[lastkey].second=lastone;
 	}
-	top=tmp[0];
-	
+  top = tmp[0];
 }
-
 }

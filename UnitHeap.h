@@ -17,6 +17,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include<vector>
 #include<climits>
 #include<algorithm>
+#include<set>
 
 #include "Util.h"
 
@@ -33,6 +34,14 @@ public:
 	int key;
 	int prev;
 	int next;
+  bool active;
+
+  ListElement(){
+    prev=next=-1;
+    //key=-1;
+    key=INITIALVALUE;
+    active=false;
+  }
 };
 
 
@@ -55,20 +64,21 @@ public:
 	int top;
 	int heapsize;
 
-	UnitHeap(int size);
+	UnitHeap(int size, vector<int>& candidate);
+	//UnitHeap(int size);
 	~UnitHeap();
 	void DeleteElement(const int index);
 	int ExtractMax();
 	void DecrementKey(const int index);
 	void DecreaseTop();
-	void ReConstruct();
-	
+	//void ReConstruct();
+	void ReConstruct(vector<int>& candidate);
 	void IncrementKey(const int index){
+    if (LinkedList[index].active) {
 		int key=LinkedList[index].key;
 		const int head=Header[key].first;
 		const int prev=LinkedList[index].prev;
 		const int next=LinkedList[index].next;
-
 		if(head!=index){
 			LinkedList[prev].next=next;
 			if(next>=0)
@@ -83,12 +93,6 @@ public:
 		}
 
 		LinkedList[index].key++;
-#ifndef Release
-		if(key+1>=Header.size()){
-			cout << "IncrementKey: key+1>=Header.size()\t" << key+1 << endl;
-			quit();
-		}
-#endif
 		if(Header[key].first==Header[key].second)
 			Header[key].first=Header[key].second=-1;
 		else if(Header[key].first==index)
@@ -108,10 +112,8 @@ public:
 		if(key+4>=Header.size()){
 			Header.resize(Header.size()*1.5);
 		}		
-	}
+  }
+  }
 };
-
 }
-
-
 #endif

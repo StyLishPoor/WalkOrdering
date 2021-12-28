@@ -1,7 +1,8 @@
-CC      = g++
-CPPFLAGS= -Wno-deprecated -O3 -c -m64 -march=native -std=c++11 -DGCC -DRelease
-LDFLAGS = -static -O3 -m64
-SOURCES = main.cpp Util.cpp Graph.cpp UnitHeap.cpp
+#CC      = g++
+CC      = mpic++
+CPPFLAGS= -Wno-deprecated -O3 -c -m64 -march=native -std=c++17 -DGCC -DRelease
+#LDFLAGS = -static -O3 -m64
+SOURCES = main.cpp Util.cpp Graph.cpp UnitHeap.cpp UnitHeap.h
 OBJECTS = $(SOURCES:.cpp=.o)
 EXECUTABLE=Gorder
 

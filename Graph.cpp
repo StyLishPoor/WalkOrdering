@@ -11,6 +11,23 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 */
 
 #include "Graph.h"
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#include <string>
+#include <vector>
+#include <cmath>
+#include <set>
+#include <unordered_set>
+#include <functional>
+#include <climits>
+#include <ctime>
+#include <stdlib.h>
+#include <cstdlib>
+#include <cstdint>
+#include <cstring>
+#include <chrono>
+#include <random>
 
 #ifdef __GNUC__
 #define likely(cond) __builtin_expect(!!(cond), 1)
@@ -188,7 +205,6 @@ void Graph::Transform(){
 		else if(a.first>b.first)
 			return false;
 		else{
-
 			if(a.second<=b.second)
 				return true;
 			else
@@ -412,146 +428,105 @@ double Graph::GapCost(vector<int>& order){
 }
 
 
-void Graph::GorderGreedy(vector<int>& retorder, int window){
-	UnitHeap unitheap(vsize);
-	vector<bool> popvexist(vsize, false);
-	vector<int> order;
-	int count=0;
-	vector<int> zero;
-	zero.reserve(10000);
-	order.reserve(vsize);
-	const int hugevertex=sqrt((double)vsize);
-
-	for(int i=0; i<vsize; i++){
-		unitheap.LinkedList[i].key=graph[i].indegree;
-		unitheap.update[i]=-graph[i].indegree;
-	}
-	unitheap.ReConstruct();
-
-	int tmpindex, tmpweight;
-
-	tmpweight=-1;
-	for(int i=0; i<vsize; i++){
-		if(graph[i].indegree>tmpweight){
-			tmpweight=graph[i].indegree;
-			tmpindex=i;
-		}else if(graph[i].indegree+graph[i].outdegree==0){
-			unitheap.update[i]=INT_MAX/2;
-			zero.push_back(i);
-			unitheap.DeleteElement(i);
-		}
-	}
-
-	order.push_back(tmpindex);
-	unitheap.update[tmpindex]=INT_MAX/2;
-	unitheap.DeleteElement(tmpindex);
-	for(int i=graph[tmpindex].instart, limit1=graph[tmpindex+1].instart; i<limit1; i++){
-		int u=inedge[i];
-		if(graph[u].outdegree<=hugevertex){
-			if(unitheap.update[u]==0){
-				unitheap.IncrementKey(u);
-			} else {
-#ifndef Release
-				if(unitheap.update[u]==INT_MAX)
-					unitheap.update[u]=INT_MAX/2;
-#endif
-				unitheap.update[u]++;
-			}
-			
-			if(graph[u].outdegree>1)
-			for(int j=graph[u].outstart, limit2=graph[u+1].outstart; j<limit2; j++){
-				int w=outedge[j];
-				if(unitheap.update[w]==0){
-					unitheap.IncrementKey(w);
-				} else {
-#ifndef Release
-					if(unitheap.update[w]==INT_MAX)
-						unitheap.update[w]=INT_MAX/2;
-#endif
-					unitheap.update[w]++;
-				}
-				
-			}
-		}
-	}
-	if(graph[tmpindex].outdegree<=hugevertex){
-		for(int i=graph[tmpindex].outstart, limit1=graph[tmpindex+1].outstart; i<limit1; i++){
-			int w=outedge[i];
-			if(unitheap.update[w]==0){
-				unitheap.IncrementKey(w);
-			}else{
-#ifndef Release
-				if(unitheap.update[w]==INT_MAX)
-					unitheap.update[w]=INT_MAX/2;
-#endif
-				unitheap.update[w]++;
-			}
-			
-		}
-	}
-
-#ifndef Release
-	clock_t time1, time2, time3, time4;
-	clock_t sum1=0, sum2=0, sum3=0;
-#endif
-
-	while(count<vsize-1-zero.size()){
-#ifndef Release
-		if(count%1000000==0){
-			cout << count << endl;
-			cout << "sum1: " << sum1 << endl;
-			cout << "sum2: " << sum2 << endl;
-			cout << "sum3: " << sum3 << endl;
-			cout << endl;
-			sum1=sum2=sum3=0;
-		}
-				
-		time1=clock();
-#endif
-
+void Graph::GorderGreedy(vector<int>& order, int window, vector<int>& candidate, int start_index, int end_index){
+  for (size_t i = 0; i < candidate.size(); i++) {
+    order[i] = candidate[i];
+  }
+}
+/*
+void Graph::GorderGreedy(vector<int>& order, int window, vector<int>& candidate, int start_index, int end_index){
+  UnitHeap unitheap(vsize, candidate);
+  vector<bool> popvexist(vsize, false);
+  vector<int> init_nodes;
+  int count=0;
+  int finish_num;
+  int tmpindex, tmpweight;
+  //const int hugevertex=1*sqrt((double)vsize);
+  const int hugevertex=0.25*sqrt((double)vsize);
+  for(const auto i : candidate){
+      unitheap.LinkedList[i].key=graph[i].indegree;
+      unitheap.update[i]=-graph[i].indegree;
+  }
+  unitheap.ReConstruct(candidate);
+  finish_num = candidate.size() - 1;
+  tmpweight=-1;
+  for (const int i : candidate) {
+    if(graph[i].indegree>tmpweight) {
+      tmpweight=graph[i].indegree;
+      tmpindex=i;
+    }
+  }
+  order.push_back(tmpindex);
+  init_nodes.push_back(tmpindex);
+  unitheap.update[tmpindex]=INT_MAX/2;
+  unitheap.DeleteElement(tmpindex);
+  for(int i=graph[tmpindex].instart, limit1=graph[tmpindex+1].instart; i<limit1; i++){
+    int u=inedge[i];
+    if(graph[u].outdegree<=hugevertex){
+      if(unitheap.update[u]==0){
+        unitheap.IncrementKey(u);
+        //if(unitheap.LinkedList[u].active) unitheap.IncrementKey(u);
+      } else {
+        unitheap.update[u]++;
+        //if(unitheap.LinkedList[u].active) unitheap.update[u]++;
+      }
+      if(graph[u].outdegree>1)
+      for(int j=graph[u].outstart, limit2=graph[u+1].outstart; j<limit2; j++){
+        int w=outedge[j];
+        if(unitheap.update[w]==0){
+          unitheap.IncrementKey(w);
+          //if(unitheap.LinkedList[w].active) unitheap.IncrementKey(w);
+        } else {
+          unitheap.update[w]++;
+          //if(unitheap.LinkedList[w].active) unitheap.update[w]++;
+        }
+      }
+    }
+  }
+  if(graph[tmpindex].outdegree<=hugevertex){
+    for(int i=graph[tmpindex].outstart, limit1=graph[tmpindex+1].outstart; i<limit1; i++){
+      int w=outedge[i];
+      if(unitheap.update[w]==0){
+        unitheap.IncrementKey(w);
+        //if(unitheap.LinkedList[w].active) unitheap.IncrementKey(w);
+      }else{
+        unitheap.update[w]++;
+        //if(unitheap.LinkedList[w].active) unitheap.update[w]++;
+      }
+    }
+  }
+	while(count<finish_num){
+    
 		int v=unitheap.ExtractMax();
 		count++;
-#ifndef Release
-		time2=clock();
-#endif
 		order.push_back(v);
 		unitheap.update[v]=INT_MAX/2;
 
 		int popv;
-		if(count-window>=0)
-			popv=order[count-window];
-		else
-			popv=-1;
+    if(count-window>=0)
+      popv=order[count-window];
+    else
+      popv=-1;
 
 		if(popv>=0){
 			if(graph[popv].outdegree<=hugevertex){
 				for(int i=graph[popv].outstart, limit1=graph[popv+1].outstart; i<limit1; i++){
 					int w=outedge[i];
 					unitheap.update[w]--;
-#ifndef Release
-					if(unitheap.update[w]==0)
-						unitheap.update[w]=INT_MAX/2;
-#endif
+					//if(unitheap.LinkedList[w].active) unitheap.update[w]--;
 				}
 			}
-
 			for(int i=graph[popv].instart, limit1=graph[popv+1].instart; i<limit1; i++){
 				int u=inedge[i];
 				if(graph[u].outdegree<=hugevertex){
 					unitheap.update[u]--;
-#ifndef Release
-					if(unitheap.update[u]==0)
-						unitheap.update[u]=INT_MAX/2;
-#endif
+					//if(unitheap.LinkedList[u].active) unitheap.update[u]--;
 					if(graph[u].outdegree>1)
 					if(binary_search(outedge.data() + graph[u].outstart, outedge.data() + graph[u+1].outstart, v)==false){
 						for(int j=graph[u].outstart, limit2=graph[u+1].outstart; j<limit2; j++){
 							int w=outedge[j];
 							unitheap.update[w]--;
-#ifndef Release
-							if(unitheap.update[w]==0)
-								unitheap.update[w]=INT_MAX/2;
-#endif
+							//if(unitheap.LinkedList[w].active) unitheap.update[w]--;
 						}
 					} else {
 						popvexist[u]=true;
@@ -559,51 +534,39 @@ void Graph::GorderGreedy(vector<int>& retorder, int window){
 				}
 			}
 		}
-
-#ifndef Release
-		time3=clock();
-#endif
 		if(graph[v].outdegree<=hugevertex){
 			for(int i=graph[v].outstart, limit1=graph[v+1].outstart; i<limit1; i++){
 				int w=outedge[i];
 				if(unlikely(unitheap.update[w]==0)){
 					unitheap.IncrementKey(w);
+					//if(unitheap.LinkedList[w].active) unitheap.IncrementKey(w);
 				} else {
-#ifndef Release
-					if(unitheap.update[w]==INT_MAX)
-						unitheap.update[w]=INT_MAX/2;
-#endif
 					unitheap.update[w]++;
+					//if(unitheap.LinkedList[w].active) unitheap.update[w]++;
 				}
 				
 			}
 		}
-
 		for(int i=graph[v].instart, limit1=graph[v+1].instart; i<limit1; i++){
 			int u=inedge[i];
 			if(graph[u].outdegree<=hugevertex){
 				if(unlikely(unitheap.update[u]==0)){
 					unitheap.IncrementKey(u);
+					//if(unitheap.LinkedList[u].active) unitheap.IncrementKey(u);
 				} else {
-#ifndef Release
-					if(unitheap.update[u]==INT_MAX)
-						unitheap.update[u]=INT_MAX/2;
-#endif
 					unitheap.update[u]++;
+					//if(unitheap.LinkedList[u].active) unitheap.update[u]++;
 				}
-				
 				if(popvexist[u]==false){
 					if(graph[u].outdegree>1)
 					for(int j=graph[u].outstart, limit2=graph[u+1].outstart; j<limit2; j++){
 						int w=outedge[j];
 						if(unlikely(unitheap.update[w]==0)){
 							unitheap.IncrementKey(w);
+							//if(unitheap.LinkedList[w].active) unitheap.IncrementKey(w);
 						}else{
-#ifndef Release
-							if(unitheap.update[w]==INT_MAX)
-								unitheap.update[w]=INT_MAX/2;
-#endif
 							unitheap.update[w]++;
+							//if(unitheap.LinkedList[w].active) unitheap.update[w]++;
 						}
 					}
 				} else {
@@ -611,42 +574,11 @@ void Graph::GorderGreedy(vector<int>& retorder, int window){
 				}
 			}
 		}
-
-
-#ifndef Release
-	time4=clock();
-	sum1+=time2-time1;
-	sum2+=time3-time2;
-	sum3+=time4-time3;
-#endif
 	}
-	order.insert(order.end()-1, zero.begin(), zero.end());
-
-
-#ifndef Release
-	vector<int> tmporder=order;
-	sort(tmporder.begin(), tmporder.end());
-	for(int i=0; i<tmporder.size()-1; i++){
-		if(tmporder[i]==tmporder[i+1]){
-			cout << "same elements: " << tmporder[i] << endl;
-			system("pause");
-		}
-	}
-	for(int i=0; i<tmporder.size(); i++){
-		if(tmporder[i]!=i){
-			cout << tmporder[i] << '\t' << i << endl;
-			system("pause");
-		}
-	}
-	tmporder=vector<int>();
-#endif
-
-	retorder.clear();
-	retorder.resize(vsize);
-	for(int i=0; i<vsize; i++){
-		retorder[order[i]]=i;
-	}
+ //clock_t hage = clock();
+ //cout << "Loop: " << (double)(hage - hoge)/CLOCKS_PER_SEC << endl;
 }
+*/
 
 
 void Graph::RCMOrder(vector<int>& retorder){
