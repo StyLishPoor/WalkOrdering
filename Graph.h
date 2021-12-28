@@ -81,7 +81,7 @@ class Graph{
 		void GapCount();
 		double GapCost(vector<int>& order);
 		void Transform();
-		void GorderGreedy(vector<int>& order, int window, vector<int>& candidate, int start_index, int end_index);
+		void GorderGreedy(vector<int>& order, int window, vector<int>& candidate);
 
 		void RCMOrder(vector<int>& order);
 		unsigned long long LocalityScore(const int w);

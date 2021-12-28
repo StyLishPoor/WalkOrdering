@@ -44,7 +44,7 @@ int main(int argc, char* argv[]){
 	}
 
   filename=argv[1];
-  cout << filename << endl;
+  //cout << filename << endl;
 	srand(time(0));
 
 	Graph g;
@@ -54,9 +54,9 @@ int main(int argc, char* argv[]){
 	start=clock();
 	g.readGraph(filename);
 	g.Transform();
-	cout << name << " readGraph is complete." << endl;
+	//cout << name << " readGraph is complete." << endl;
 	end=clock();
-	cout << "Time Cost: " << (double)(end-start)/CLOCKS_PER_SEC << endl;
+	//cout << "Time Cost: " << (double)(end-start)/CLOCKS_PER_SEC << endl;
   int max=-1;
   int start_node = -1;
   for (size_t i = 0; i < g.vsize; i++) {
@@ -84,10 +84,11 @@ int main(int argc, char* argv[]){
   mt19937 engine(seed_gen());
   uniform_real_distribution<> dist(0.0, 1.0);
 
-  cout << "PID " << pid << endl;
+  //cout << "PID " << pid << endl;
   int current_node, next_node, init_node;
 
   // pid 0's job
+  start=clock();
   if (pid==0) {
     // initialize
     candidate.push_back(start_node);
@@ -98,9 +99,8 @@ int main(int argc, char* argv[]){
     int check = 0;
 
     // RW
-    start=clock();
     while(check < stoi(argv[3])) {
-      rw_start = clock();
+      //rw_start = clock();
       while(candidate.size() != candidate_size) {
         next_node = g.outedge[g.graph[current_node].outstart + (engine() % g.graph[current_node].outdegree)];
         if (dist(engine) <= static_cast<double>(g.graph[current_node].outdegree) / g.graph[next_node].outdegree) {
@@ -122,16 +122,15 @@ int main(int argc, char* argv[]){
           continue;
         }
       }
-      rw_end = clock();
-      rw_total += (double)(rw_end - rw_start);
-      gorder_start = clock();
+      //rw_end = clock();
+      //rw_total += (double)(rw_end - rw_start);
+      //gorder_start = clock();
 
       //TODO: Send candidate to proc count+1
       check++;
       MPI_Send(&candidate[0], candidate_size, MPI_INT, check, 0, MPI_COMM_WORLD);
       candidate.clear();
     }
-    end=clock();
     for (size_t i = 1; i < nprocs; i++) {
       // Receive reordered vector from proc nproc
       MPI_Recv(&recv[0], candidate_size, MPI_INT, i, 0, MPI_COMM_WORLD, &status);
@@ -142,12 +141,14 @@ int main(int argc, char* argv[]){
     }
   } else { // pid > 0 : Gorder process
       MPI_Recv(&recv[0], candidate_size, MPI_INT, 0, 0, MPI_COMM_WORLD, &status);
-      int start_index = (pid - 1) * candidate_size;
-      int end_index = pid * candidate_size - 1;
+      //int start_index = (pid - 1) * candidate_size;
+      //int end_index = pid * candidate_size - 1;
       // TODO: Receive candidate from proc 0 and Reordering
-      vector<int> partial_order(candidate_size);
+      vector<int> partial_order;
+      partial_order.reserve(candidate_size);
       //partial_order.reserve(candidate_size);
-      g.GorderGreedy(partial_order, W, recv, start_index, end_index);
+      //g.GorderGreedy(partial_order, W, recv, start_index, end_index);
+      g.GorderGreedy(partial_order, W, recv);
       MPI_Send(&partial_order[0], candidate_size, MPI_INT, 0, 0, MPI_COMM_WORLD);
 
   }
@@ -159,7 +160,6 @@ int main(int argc, char* argv[]){
   rw_ave = (double)(rw_total/check);
   gorder_ave = (double)(gorder_total/check);
   double execute_time;
-  execute_time = rw_ave + (gorder_ave - rw_ave) * (check-1) + gorder_ave;
   cout << "---[Parallel]---" << endl;
   cout << "Execute Time: " << (execute_time)/CLOCKS_PER_SEC << endl;
   cout << "Ideal Time: " << (double)(rw_total + gorder_ave)/CLOCKS_PER_SEC << endl;
@@ -167,6 +167,8 @@ int main(int argc, char* argv[]){
   */
   if (pid==0) {
   //vector<int> retorder;
+  end=clock();
+  cout << "Execute Time: " << (double)(end-start)/CLOCKS_PER_SEC << endl;;
   vector<int> retorder(g.vsize);
   //cout << retorder.size() << endl;
   //retorder.reserve(g.vsize);
@@ -175,12 +177,20 @@ int main(int argc, char* argv[]){
   //cout << order.size() << " " << g.vsize << endl;
   int new_id = 0;
   ///*
+  cout << "Size: " << order.size() << endl;
+  /*
+  cout << "!!!" << endl;
+  for (const int v : order) {
+    cout << v << endl;
+  }
+  cout << "!!!" << endl;
+  */
   for(const auto v : order) {
     retorder[v] = new_id++;
   }
-  cout << "Size" << endl;
-  cout << order.size() << endl;
-  cout << retorder.size() << endl;
+  //cout << "Size" << endl;
+  //cout << order.size() << endl;
+  //cout << retorder.size() << endl;
   //for(int i = 0; i < g.vsize; i++) {
   //  cout << order[i] << endl;
   //  retorder[order[i]]=i;
@@ -213,7 +223,7 @@ int main(int argc, char* argv[]){
   true_order.reserve(g.vsize);
   start = clock();
   //g.GorderGreedy(true_order, W, visited);
-  //g.GorderGreedy(true_order, W, test);
+  g.GorderGreedy(true_order, W, test);
   end = clock();
   cout << "Size: " << true_order.size() << endl;
   cout << "True Time: " << (double)(rw_total + (end-start))/CLOCKS_PER_SEC << endl;
