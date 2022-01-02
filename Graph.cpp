@@ -1,15 +1,3 @@
-/*
-MIT License
-
-Copyright (c) 2016, Hao Wei.
-
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-*/
-
 #include "Graph.h"
 #include <iostream>
 #include <fstream>
@@ -421,8 +409,8 @@ double Graph::GapCost(vector<int>& order){
 				gaplog2+=log(double(edgelist[j]-edgelist[j-1]))/log(double(2));
 		}
 	}
-	cout << "original average gap cost: " << gaplog/edgenum << endl;
-	cout << "new average gap cost: " << gaplog2/edgenum << endl;
+	//cout << "original average gap cost: " << gaplog/edgenum << endl;
+	//cout << "new average gap cost: " << gaplog2/edgenum << endl;
 
 	return gaplog2/edgenum;
 }
@@ -435,8 +423,10 @@ void Graph::GorderGreedy(vector<int>& order, int window, vector<int>& candidate)
   int count=0;
   int finish_num;
   int tmpindex, tmpweight;
-  const int hugevertex=sqrt((double)vsize);
+  const int hugevertex=0.75*sqrt((double)vsize);
+  //const int hugevertex=0.50*sqrt((double)vsize);
   //const int hugevertex=0.25*sqrt((double)vsize);
+  //const int hugevertex=sqrt((double)vsize);
   for(const auto i : candidate){
       unitheap.LinkedList[i].key=graph[i].indegree;
       unitheap.update[i]=-graph[i].indegree;
