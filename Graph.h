@@ -73,6 +73,8 @@ class Graph{
 		void PrintReOrderedGraph(const vector<int>& order);
 		void GraphAnalysis();
 		void RemoveDuplicate(const string& fullname);
+    void SubGraph(Graph& sub, const vector<int>& candidate);
+    //void SubGraph(Graph& sub, const set<int>& candidate);
 		
 		void strTrimRight(string& str);
 		static vector<string> split(const string &s, char delim);
@@ -80,8 +82,10 @@ class Graph{
 
 		void GapCount();
 		double GapCost(vector<int>& order);
+		double GapCostV(vector<int>& order, set<int>& visited);
 		void Transform();
 		void GorderGreedy(vector<int>& order, int window, vector<int>& candidate);
+		void GorderSubGreedy(vector<int>& order, int window, vector<int>& candidate);
 
 		void RCMOrder(vector<int>& order);
 		unsigned long long LocalityScore(const int w);

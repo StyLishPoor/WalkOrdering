@@ -52,6 +52,54 @@ void Graph::clear() {
 	inedge.clear();
 }
 
+void Graph::SubGraph(Graph& sub, const vector<int>& candidate) {
+  cout << candidate.size() << endl;
+  vector<bool> exist(vsize, false); // exist[i]==trueのときiはcandidateに含まれる
+  vector< pair<int, int> > edges;
+	edges.reserve(10000000);
+  for (const int u : candidate) {
+    exist[u] = true;
+  }
+
+  sub.edgenum=0;
+  for (const int u : candidate) {
+    for (size_t i = graph[u].outstart; i < graph[u].outstart + graph[u].outdegree; i++) {
+      int v = outedge[i];
+      if (exist[v]) {
+        edges.push_back(make_pair(u, v));
+      }
+    }
+  }
+  sub.edgenum = edges.size();
+  sub.vsize = vsize;
+  sub.graph.resize(vsize+1);
+  for(long long i=0; i<edges.size(); i++){
+    sub.graph[edges[i].first].outdegree++;
+    sub.graph[edges[i].second].indegree++;
+  }
+  sub.graph[0].outstart=0;
+  sub.graph[0].instart=0;
+   for(int i=1; i<vsize; i++){
+    sub.graph[i].outstart=graph[i-1].outstart+graph[i-1].outdegree;
+    sub.graph[i].instart=graph[i-1].instart+graph[i-1].indegree;
+  }
+ 
+  sort(edges.begin(), edges.end(), [](const pair<int, int>& a, const pair<int, int>& b)->bool{
+   if(a.first<b.first) return true;
+   else if(a.first>b.first) return false;
+   else {
+     if(a.second<=b.second) return true;
+     else return false;
+   }
+  });
+
+  sub.outedge.resize(edgenum);
+  sub.inedge.resize(edgenum);
+  for(long long i=0; i<edges.size(); i++){
+    sub.outedge[i]=edges[i].second;
+    sub.inedge[i]=edges[i].second;
+  }
+}
 
 void Graph::readGraph(const string& fullname) {
 	FILE* fp;
@@ -126,20 +174,6 @@ void Graph::readGraph(const string& fullname) {
 	}
 
 	vector< pair<int, int> >().swap(edges);
-#ifndef Release	
-	vector<int> inpos(vsize);
-	for(int i=0; i<vsize; i++){
-		inpos[i]=graph[i].instart;
-	}
-	inedge.resize(edgenum);
-	for(int u=0; u<vsize; u++){
-		for(int j=graph[u].outstart; j<graph[u].outstart+graph[u].outdegree; j++){
-			inedge[inpos[outedge[j]]]=u;
-			inpos[outedge[j]]++;
-		}
-	}
-#endif
-
 	//cout << "vsize: " << vsize << endl;
 	//cout << "edgenum: " << edgenum << endl;
 	graph[vsize].outstart=edgenum;
@@ -389,6 +423,7 @@ void Graph::GapCount(){
 	delete[] gap;
 }
 
+/*
 double Graph::GapCost(vector<int>& order){
 	double gaplog=0;
 	double gaplog2=0;
@@ -414,19 +449,186 @@ double Graph::GapCost(vector<int>& order){
 
 	return gaplog2/edgenum;
 }
+*/
 
+double Graph::GapCostV(vector<int>& order, set<int>& visited){
+	double gaplog=0;
+	double gaplog2=0;
+  int edge_num=0; // 集めたグラフだけのエッジ数
+	vector<int> edgelist;
+	edgelist.reserve(100000);
+	//for(int i=0; i<vsize; i++){
+	for(const int i : visited){
+    //cout << "Here" << endl;
+    edgelist.clear();
+		for(int j=graph[i].outstart; j<graph[i].outstart+graph[i].outdegree; j++){
+      if (order[outedge[j]] >= 0) {
+        edge_num++;
+        edgelist.push_back(order[outedge[j]]);
+      }
+		}
+		sort(edgelist.begin(), edgelist.end());
+		for(int j=1; j<edgelist.size(); j++){
+			//if(edgelist[j]-edgelist[j-1] && visited.count(edgelist[j]) && visited.c)
+			if(edgelist[j]-edgelist[j-1])
+				gaplog2+=log(double(edgelist[j]-edgelist[j-1]))/log(double(2));
+		}
+	}
+	//cout << "original average gap cost: " << gaplog/edgenum << endl;
+	cout << "new average gap cost: " << gaplog2/edge_num << endl;
+
+	return gaplog2/edgenum;
+}
+
+void Graph::GorderSubGreedy(vector<int>& order, int window, vector<int>& candidate){
+  UnitHeap unitheap(vsize, candidate);
+  vector<bool> popvexist(vsize, false);
+  int count=0;
+  int finish_num = candidate.size() - 1;
+  int tmpindex, tmpweight;
+  const int hugevertex=sqrt((double)vsize);
+  for(const auto i : candidate){
+      unitheap.LinkedList[i].key=graph[i].indegree;
+      unitheap.update[i]=-graph[i].indegree;
+  }
+  unitheap.ReConstruct(candidate);
+  tmpweight=-1;
+  for (const int i : candidate) {
+    if(graph[i].indegree>tmpweight) {
+      tmpweight=graph[i].indegree;
+      tmpindex=i;
+    }
+  }
+  order.push_back(tmpindex);
+  unitheap.update[tmpindex]=INT_MAX/2;
+  unitheap.DeleteElement(tmpindex);
+  for(int i=graph[tmpindex].instart, limit1=graph[tmpindex+1].instart; i<limit1; i++){
+    int u=inedge[i];
+    if(graph[u].outdegree<=hugevertex){
+      if(unitheap.update[u]==0){
+        unitheap.IncrementKey(u);
+        //if(unitheap.LinkedList[u].active) unitheap.IncrementKey(u);
+      } else {
+        unitheap.update[u]++;
+        //if(unitheap.LinkedList[u].active) unitheap.update[u]++;
+      }
+      if(graph[u].outdegree>1)
+      for(int j=graph[u].outstart, limit2=graph[u+1].outstart; j<limit2; j++){
+        int w=outedge[j];
+        if(unitheap.update[w]==0){
+          unitheap.IncrementKey(w);
+          //if(unitheap.LinkedList[w].active) unitheap.IncrementKey(w);
+        } else {
+          unitheap.update[w]++;
+          //if(unitheap.LinkedList[w].active) unitheap.update[w]++;
+        }
+      }
+    }
+  }
+  if(graph[tmpindex].outdegree<=hugevertex){
+    for(int i=graph[tmpindex].outstart, limit1=graph[tmpindex+1].outstart; i<limit1; i++){
+      int w=outedge[i];
+      if(unitheap.update[w]==0){
+        unitheap.IncrementKey(w);
+        //if(unitheap.LinkedList[w].active) unitheap.IncrementKey(w);
+      }else{
+        unitheap.update[w]++;
+        //if(unitheap.LinkedList[w].active) unitheap.update[w]++;
+      }
+    }
+  }
+	while(count<finish_num){
+    
+		int v=unitheap.ExtractMax();
+		count++;
+		order.push_back(v);
+		unitheap.update[v]=INT_MAX/2;
+
+		int popv;
+    if(count-window>=0)
+      popv=order[count-window];
+    else
+      popv=-1;
+
+		if(popv>=0){
+			if(graph[popv].outdegree<=hugevertex){
+				for(int i=graph[popv].outstart, limit1=graph[popv+1].outstart; i<limit1; i++){
+					int w=outedge[i];
+					unitheap.update[w]--;
+					//if(unitheap.LinkedList[w].active) unitheap.update[w]--;
+				}
+			}
+			for(int i=graph[popv].instart, limit1=graph[popv+1].instart; i<limit1; i++){
+				int u=inedge[i];
+				if(graph[u].outdegree<=hugevertex){
+					unitheap.update[u]--;
+					//if(unitheap.LinkedList[u].active) unitheap.update[u]--;
+					if(graph[u].outdegree>1)
+					if(binary_search(outedge.data() + graph[u].outstart, outedge.data() + graph[u+1].outstart, v)==false){
+						for(int j=graph[u].outstart, limit2=graph[u+1].outstart; j<limit2; j++){
+							int w=outedge[j];
+							unitheap.update[w]--;
+							//if(unitheap.LinkedList[w].active) unitheap.update[w]--;
+						}
+					} else {
+						popvexist[u]=true;
+					}
+				}
+			}
+		}
+		if(graph[v].outdegree<=hugevertex){
+			for(int i=graph[v].outstart, limit1=graph[v+1].outstart; i<limit1; i++){
+				int w=outedge[i];
+				if(unlikely(unitheap.update[w]==0)){
+					unitheap.IncrementKey(w);
+					//if(unitheap.LinkedList[w].active) unitheap.IncrementKey(w);
+				} else {
+					unitheap.update[w]++;
+					//if(unitheap.LinkedList[w].active) unitheap.update[w]++;
+				}
+				
+			}
+		}
+		for(int i=graph[v].instart, limit1=graph[v+1].instart; i<limit1; i++){
+			int u=inedge[i];
+			if(graph[u].outdegree<=hugevertex){
+				if(unlikely(unitheap.update[u]==0)){
+					unitheap.IncrementKey(u);
+					//if(unitheap.LinkedList[u].active) unitheap.IncrementKey(u);
+				} else {
+					unitheap.update[u]++;
+					//if(unitheap.LinkedList[u].active) unitheap.update[u]++;
+				}
+				if(popvexist[u]==false){
+					if(graph[u].outdegree>1)
+					for(int j=graph[u].outstart, limit2=graph[u+1].outstart; j<limit2; j++){
+						int w=outedge[j];
+						if(unlikely(unitheap.update[w]==0)){
+							unitheap.IncrementKey(w);
+							//if(unitheap.LinkedList[w].active) unitheap.IncrementKey(w);
+						}else{
+							unitheap.update[w]++;
+							//if(unitheap.LinkedList[w].active) unitheap.update[w]++;
+						}
+					}
+				} else {
+					popvexist[u]=false;
+				}
+			}
+		}
+	}
+  //cout << "Reorder Time: " << (double)(end-start)/CLOCKS_PER_SEC << endl;
+}
 
 void Graph::GorderGreedy(vector<int>& order, int window, vector<int>& candidate){
+  clock_t start = clock();
   UnitHeap unitheap(vsize, candidate);
   vector<bool> popvexist(vsize, false);
   vector<int> init_nodes;
   int count=0;
   int finish_num;
   int tmpindex, tmpweight;
-  const int hugevertex=0.75*sqrt((double)vsize);
-  //const int hugevertex=0.50*sqrt((double)vsize);
-  //const int hugevertex=0.25*sqrt((double)vsize);
-  //const int hugevertex=sqrt((double)vsize);
+  const int hugevertex=sqrt((double)vsize);
   for(const auto i : candidate){
       unitheap.LinkedList[i].key=graph[i].indegree;
       unitheap.update[i]=-graph[i].indegree;
@@ -559,11 +761,57 @@ void Graph::GorderGreedy(vector<int>& order, int window, vector<int>& candidate)
 			}
 		}
 	}
+  //int seq_length=0;
+  //int pos=0;
   /*
+  while (pos < candidate.size()){
+    auto itr = find(order.begin(), order.end(), candidate[pos]);
+    auto dist = distance(order.begin(), itr);
+    while(pos < candidate.size() && dist < order.size()) {
+      if(candidate[++pos] == order[++dist]) {
+        seq_length++;
+      } else {
+        break;
+      }
+    }
+  }
+  */
+  /*
+  double average_distance=0;
+  cout << "Size: " << candidate.size() << endl;
+  bool found=false;
+  int test=0;
+  int test2=0;
+  for (size_t i = 0; i < candidate.size()-1; i++) {
+    auto first = candidate[i];
+    auto second = candidate[i+1];
+    auto itr_first = find(order.begin(), order.end(), first);
+    auto itr_second = find(order.begin(), order.end(), second);
+    auto dist_first = distance(order.begin(), itr_first);
+    auto dist_second = distance(order.begin(), itr_second);
+    average_distance += abs(dist_first - dist_second);
+    if (abs(dist_first - dist_second) == 1) {
+      test2++;
+      if(!found) {
+        test++; 
+        found=true;
+      }
+      //cout << "----" << endl;
+      //cout << first << " " << second << endl;
+      //cout << graph[first].outdegree << " " << graph[second].outdegree << endl;
+    } else {
+      if(found) found=false;
+    }
+  }
+  cout << "Average Distance: " << average_distance/(candidate.size()-2) << endl;
+  cout << "TEST: " << test << " TEST2: " << test2 << endl;
+  //cout << "Order Size: " << order.size() << ", Sequential Length: " << seq_length << " Ratio: " << (double)seq_length/order.size()<< endl;;
   for (const int v : order) {
     cout << v << endl;
   }
   */
+  clock_t end = clock();
+  cout << "Reorder Time: " << (double)(end-start)/CLOCKS_PER_SEC << endl;
 }
 /*
 void Graph::GorderGreedy(vector<int>& order, int window, vector<int>& candidate, int start_index, int end_index){
