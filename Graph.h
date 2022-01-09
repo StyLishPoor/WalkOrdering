@@ -85,7 +85,8 @@ class Graph{
 		void GapCount();
 		double GapCost(vector<int>& order);
 		double GapCostV(vector<int>& order, set<int>& visited);
-		void Transform();
+		//void Transform();
+		vector<int> Transform();
 		void GorderGreedy(vector<int>& order, int window, vector<int>& candidate);
 		void GorderSubGreedy(vector<int>& order, int window, vector<int>& candidate);
 

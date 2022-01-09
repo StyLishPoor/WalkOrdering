@@ -46,14 +46,14 @@ int main(int argc, char* argv[]){
   filename=argv[1];
   //cout << filename << endl;
 	srand(time(0));
-
 	Graph g, sampled_g;
 	string name;
 	name=extractFilename(filename.c_str());
 	g.setFilename(name);
 	start=clock();
 	g.readGraph(filename);
-	g.Transform();
+  vector<int> original_order(g.vsize);
+	original_order = g.Transform();
 	//cout << name << " readGraph is complete." << endl;
 	end=clock();
 	//cout << "Time Cost: " << (double)(end-start)/CLOCKS_PER_SEC << endl;
@@ -99,6 +99,7 @@ int main(int argc, char* argv[]){
     start=clock();
     if (pid==0) {
       // initialize
+      rw_total = 0;
       candidate.push_back(start_node);
       seqseq.push_back(start_node);
       visited.insert(start_node);
@@ -108,6 +109,7 @@ int main(int argc, char* argv[]){
 
       // RW
       while(check < stoi(argv[3])) {
+        rw_start = clock();
         while(candidate.size() != candidate_size) {
           next_node = g.outedge[g.graph[current_node].outstart + (engine() % g.graph[current_node].outdegree)];
           if (dist(engine) <= static_cast<double>(g.graph[current_node].outdegree) / g.graph[next_node].outdegree) {
@@ -126,6 +128,8 @@ int main(int argc, char* argv[]){
             continue;
           }
         }
+        rw_end = clock();
+        rw_total += (double)(rw_end - rw_start);
         check++;
         MPI_Send(&candidate[0], candidate_size, MPI_INT, check, 0, MPI_COMM_WORLD);
         vector<int> collected(visited.begin(), visited.end());
@@ -174,6 +178,7 @@ int main(int argc, char* argv[]){
     string tmp(argv[3]);
     string output_file=tmp + "-.ans";
     string output_graph = tmp + "-sample.txt";
+    //string output_rwtime = "rw-time.txt";
     double gap_average=0;
     double time_average=0;
     for (size_t i = 0; i < stoi(argv[4]); i++) {
@@ -186,6 +191,9 @@ int main(int argc, char* argv[]){
     ans << gap_average << " " << time_average;
     ofstream outgraph(output_graph);
     g.WriteSampleGraph(visited, retorder, outgraph);
+    //ofstream rwtime(output_rwtime);
+    //cout << rw_total << endl;
+    //rwtime << rw_total/CLOCKS_PER_SEC;
     /*
     for (const auto edge : path) {
       outgraph << retorder[edge.first] << " " << retorder[edge.second] << endl;
@@ -199,7 +207,7 @@ int main(int argc, char* argv[]){
     for (const auto v : seqseq) {
       seq_retorder[v] = new_id++;
     }
-    cout << "SEQ GAP" << endl;
+    //cout << "SEQ GAP" << endl;
     g.GapCostV(seq_retorder, visited);
     shuffle(seqseq.begin(), seqseq.end(), engine);
     vector<int> random_retorder(g.vsize, -1);
@@ -208,13 +216,14 @@ int main(int argc, char* argv[]){
     for (const auto v : seqseq) {
       random_retorder[v] = new_id++;
     }
-    cout << "RANDOM GAP" << endl;
+    //cout << "RANDOM GAP" << endl;
     g.GapCostV(random_retorder, visited);
-    vector<int> reorder(g.vsize);
-    g.ReRCMOrder(reorder);
+    //vector<int> reorder;
+    //reorder.reserve(g.vsize);
+    //g.ReRCMOrder(reorder);
 
     ofstream original_graph("original.txt");
-    g.WriteSampleGraph(visited, reorder, original_graph);
+    g.WriteSampleGraph(visited, original_order, original_graph);
     /*
     for (const auto edge : path) {
       original_graph << edge.first << " " << edge.second << endl;

@@ -179,9 +179,14 @@ void Graph::readGraph(const string& fullname) {
 	graph[vsize].instart=edgenum;
 }
 
-void Graph::Transform(){
+//void Graph::Transform(){
+vector<int> Graph::Transform(){
 	vector<int> order;
 	RCMOrder(order);
+  vector<int> original_order(order.size());
+  for (size_t i = 0; i < order.size(); i++) {
+    original_order[order[i]] = i;
+  }
 	if(order.size()!=vsize){
 		cout << "order.size()!=vsize" << endl;
 		quit();
@@ -249,6 +254,7 @@ void Graph::Transform(){
 			inpos[outedge[j]]++;
 		}
 	}
+  return original_order;
 }
 
 
@@ -511,7 +517,7 @@ double Graph::GapCostV(vector<int>& order, set<int>& visited){
 		}
 	}
 	//cout << "original average gap cost: " << gaplog/edgenum << endl;
-	cout << "new average gap cost: " << gaplog2/edge_num << endl;
+	//cout << "new average gap cost: " << gaplog2/edge_num << endl;
 
 	return gaplog2/edge_num;
 }
