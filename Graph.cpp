@@ -53,7 +53,6 @@ void Graph::clear() {
 }
 
 void Graph::SubGraph(Graph& sub, const vector<int>& candidate) {
-  cout << candidate.size() << endl;
   vector<bool> exist(vsize, false); // exist[i]==trueのときiはcandidateに含まれる
   vector< pair<int, int> > edges;
 	edges.reserve(10000000);
@@ -262,6 +261,42 @@ void Graph::writeGraph(ostream& out){
 	}
 }
 
+void Graph::WriteSampleOriginalGraph(set<int>& visited, ofstream& out) {
+  vector<bool> exist(vsize, false);
+  //vector< pair<int, int> > edges;
+	//edges.reserve(10000000);
+  for (const int u : visited) {
+    exist[u] = true;
+  }
+
+  for (const int u : visited) {
+    for (size_t i = graph[u].outstart; i < graph[u].outstart + graph[u].outdegree; i++) {
+      int v = outedge[i];
+      if (exist[v]) {
+        out << u << " " << v << endl;
+      }
+    }
+  }
+}
+
+void Graph::WriteSampleGraph(set<int>& visited, vector<int>& retorder, ofstream& out) {
+  vector<bool> exist(vsize, false);
+  //vector< pair<int, int> > edges;
+	//edges.reserve(10000000);
+  for (const int u : visited) {
+    exist[u] = true;
+  }
+
+  for (const int u : visited) {
+    for (size_t i = graph[u].outstart; i < graph[u].outstart + graph[u].outdegree; i++) {
+      int v = outedge[i];
+      if (exist[v]) {
+        out << retorder[u] << " " << retorder[v] << endl;
+      }
+    }
+  }
+}
+
 
 void Graph::PrintReOrderedGraph(const vector<int>& order){
 	ofstream out((name+"_Gorder.txt").c_str());
@@ -454,22 +489,23 @@ double Graph::GapCost(vector<int>& order){
 double Graph::GapCostV(vector<int>& order, set<int>& visited){
 	double gaplog=0;
 	double gaplog2=0;
+  vector<bool> exist(vsize, false);
+  for (const int v : visited) {
+    exist[v] = true;
+  }
   int edge_num=0; // 集めたグラフだけのエッジ数
 	vector<int> edgelist;
 	edgelist.reserve(100000);
-	//for(int i=0; i<vsize; i++){
 	for(const int i : visited){
-    //cout << "Here" << endl;
     edgelist.clear();
 		for(int j=graph[i].outstart; j<graph[i].outstart+graph[i].outdegree; j++){
-      if (order[outedge[j]] >= 0) {
+      if (exist[outedge[j]]) {
         edge_num++;
         edgelist.push_back(order[outedge[j]]);
       }
 		}
 		sort(edgelist.begin(), edgelist.end());
 		for(int j=1; j<edgelist.size(); j++){
-			//if(edgelist[j]-edgelist[j-1] && visited.count(edgelist[j]) && visited.c)
 			if(edgelist[j]-edgelist[j-1])
 				gaplog2+=log(double(edgelist[j]-edgelist[j-1]))/log(double(2));
 		}
@@ -477,7 +513,7 @@ double Graph::GapCostV(vector<int>& order, set<int>& visited){
 	//cout << "original average gap cost: " << gaplog/edgenum << endl;
 	cout << "new average gap cost: " << gaplog2/edge_num << endl;
 
-	return gaplog2/edgenum;
+	return gaplog2/edge_num;
 }
 
 void Graph::GorderSubGreedy(vector<int>& order, int window, vector<int>& candidate){
@@ -621,7 +657,7 @@ void Graph::GorderSubGreedy(vector<int>& order, int window, vector<int>& candida
 }
 
 void Graph::GorderGreedy(vector<int>& order, int window, vector<int>& candidate){
-  clock_t start = clock();
+  //clock_t start = clock();
   UnitHeap unitheap(vsize, candidate);
   vector<bool> popvexist(vsize, false);
   vector<int> init_nodes;
@@ -810,8 +846,8 @@ void Graph::GorderGreedy(vector<int>& order, int window, vector<int>& candidate)
     cout << v << endl;
   }
   */
-  clock_t end = clock();
-  cout << "Reorder Time: " << (double)(end-start)/CLOCKS_PER_SEC << endl;
+  //clock_t end = clock();
+  //cout << "Reorder Time: " << (double)(end-start)/CLOCKS_PER_SEC << endl;
 }
 /*
 void Graph::GorderGreedy(vector<int>& order, int window, vector<int>& candidate, int start_index, int end_index){
@@ -960,7 +996,18 @@ void Graph::GorderGreedy(vector<int>& order, int window, vector<int>& candidate,
 }
 */
 
+void Graph::ReRCMOrder(vector<int>& reorder) {
+  vector<int> order;
+  RCMOrder(order);
+  if(order.size()!=vsize){
+    cout << "order.size()!=vsize" << endl;
+    quit();
+  }
 
+  for (size_t i = 0; i < vsize; i++) {
+    reorder[order[i]] = i;
+  }
+}
 void Graph::RCMOrder(vector<int>& retorder){
 	queue<int> que;
 	bool* BFSflag=new bool[vsize];
@@ -1035,7 +1082,6 @@ void Graph::RCMOrder(vector<int>& retorder){
 		retorder[order[i]]=order.size()-1-i;
 	}
 }
-
 
 unsigned long long Graph::LocalityScore(const int w){
 	unsigned long long sum=0;

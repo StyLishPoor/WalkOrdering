@@ -13,7 +13,8 @@ else
   for i in `seq 1 $PARALLEL`
   do 
     echo "----[$i]----"
-    mpirun -np $(($i+1)) ./Gorder $GRAPH $SAMPLE_RATIO $i $AVERAGE
+    mpirun -np $(($i+1)) ./SubGorder $GRAPH $SAMPLE_RATIO $i $AVERAGE
+    less $i"-sample.txt" | wc -l
     ./../ligra/utils/SNAPtoAdj $i"-sample.txt" $i".adj"
     ./../ligra/apps/PageRank $i".adj"
     #./../ligra/apps/PageRankDelta $i".adj"

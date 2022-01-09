@@ -74,6 +74,8 @@ class Graph{
 		void GraphAnalysis();
 		void RemoveDuplicate(const string& fullname);
     void SubGraph(Graph& sub, const vector<int>& candidate);
+    void WriteSampleOriginalGraph(set<int>& visited, ofstream& out);
+    void WriteSampleGraph(set<int>& visited, vector<int>& retorder, ofstream& out);
     //void SubGraph(Graph& sub, const set<int>& candidate);
 		
 		void strTrimRight(string& str);
@@ -87,7 +89,8 @@ class Graph{
 		void GorderGreedy(vector<int>& order, int window, vector<int>& candidate);
 		void GorderSubGreedy(vector<int>& order, int window, vector<int>& candidate);
 
-		void RCMOrder(vector<int>& order);
+		void RCMOrder(vector<int>& retorder);
+    void ReRCMOrder(vector<int>& reorder);
 		unsigned long long LocalityScore(const int w);
 };
 

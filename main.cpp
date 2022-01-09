@@ -111,7 +111,7 @@ int main(int argc, char* argv[]){
         while(candidate.size() != candidate_size) {
           next_node = g.outedge[g.graph[current_node].outstart + (engine() % g.graph[current_node].outdegree)];
           if (dist(engine) <= static_cast<double>(g.graph[current_node].outdegree) / g.graph[next_node].outdegree) {
-            path.push_back(make_pair(current_node, next_node));
+            //path.push_back(make_pair(current_node, next_node));
             if (visited.count(next_node) == 0) {
               candidate.push_back(next_node);
               visited.insert(next_node);
@@ -145,13 +145,13 @@ int main(int argc, char* argv[]){
         MPI_Recv(&recv[0], candidate_size, MPI_INT, 0, 0, MPI_COMM_WORLD, &status);
         vector<int> recv_collected(collected_size);
         MPI_Recv(&recv_collected[0], collected_size, MPI_INT, 0, 0, MPI_COMM_WORLD, &status);
-        Graph sub_g;
-        g.SubGraph(sub_g, recv_collected);
+        //Graph sub_g;
+        //g.SubGraph(sub_g, recv_collected);
         //g.SubGraph(sub_g, recv);
         vector<int> partial_order;
         partial_order.reserve(candidate_size);
-        //g.GorderGreedy(partial_order, W, recv);
-        sub_g.GorderSubGreedy(partial_order, W, recv);
+        g.GorderGreedy(partial_order, W, recv);
+        //sub_g.GorderSubGreedy(partial_order, W, recv);
         MPI_Send(&partial_order[0], candidate_size, MPI_INT, 0, 0, MPI_COMM_WORLD);
 
     }
@@ -166,8 +166,6 @@ int main(int argc, char* argv[]){
       for(const auto v : order) {
         retorder[v] = new_id++;
       }
-      cout << "SIZE CHECK" << endl;
-      cout << visited.size() << endl;
       gapvector.push_back(g.GapCostV(retorder, visited));
       retorder.clear();
     }
@@ -187,9 +185,12 @@ int main(int argc, char* argv[]){
     ofstream ans(output_file);
     ans << gap_average << " " << time_average;
     ofstream outgraph(output_graph);
+    g.WriteSampleGraph(visited, retorder, outgraph);
+    /*
     for (const auto edge : path) {
       outgraph << retorder[edge.first] << " " << retorder[edge.second] << endl;
     }
+    */
   }
   if (pid==0 && stoi(argv[3])==1) {
     vector<int> seq_retorder(g.vsize, -1);
@@ -209,18 +210,30 @@ int main(int argc, char* argv[]){
     }
     cout << "RANDOM GAP" << endl;
     g.GapCostV(random_retorder, visited);
+    vector<int> reorder(g.vsize);
+    g.ReRCMOrder(reorder);
+
     ofstream original_graph("original.txt");
+    g.WriteSampleGraph(visited, reorder, original_graph);
+    /*
     for (const auto edge : path) {
       original_graph << edge.first << " " << edge.second << endl;
     }
+    */
     ofstream seq_graph("seq.txt");
+    g.WriteSampleGraph(visited, seq_retorder, seq_graph);
+    /*
     for (const auto edge : path) {
       seq_graph << seq_retorder[edge.first] << " " << seq_retorder[edge.second] << endl;
     }
+    */
     ofstream random_graph("random.txt");
+    g.WriteSampleGraph(visited, random_retorder, random_graph);
+    /*
     for (const auto edge : path) {
       random_graph << random_retorder[edge.first] << " " << random_retorder[edge.second] << endl;
     }
+    */
   }
   MPI_Finalize();
 }
