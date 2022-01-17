@@ -21,8 +21,11 @@ exec_list = []
 for i in range(1, int(sys.argv[1])+1):
   filename = str(i) + ".exectime"
   with open(filename) as f:
-    tmp = f.readline()
-    exectime = float(str(tmp))
+    tmp = f.readlines()
+    exectime = 0
+    for ptime in tmp:
+      exectime += float(str(ptime))
+    exectime = exectime / len(tmp)
     exec_list.append(exectime)
     base_time[i-1] += exectime
 

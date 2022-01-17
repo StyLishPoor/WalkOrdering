@@ -55,6 +55,7 @@ public:
 class Graph{
 	public:
 		int vsize;
+    int vnum;
 		long long edgenum;
 		string name;
 		
@@ -73,6 +74,8 @@ class Graph{
 		void PrintReOrderedGraph(const vector<int>& order);
 		void GraphAnalysis();
 		void RemoveDuplicate(const string& fullname);
+    void SubGraphTest(Graph& sub, const vector<int>& candidate, double p);
+    void SubGraphTest2(Graph& sub, const vector<int>& candidate, double p);
     void SubGraph(Graph& sub, const vector<int>& candidate);
     void WriteSampleOriginalGraph(set<int>& visited, ofstream& out);
     void WriteSampleGraph(set<int>& visited, vector<int>& retorder, ofstream& out);
@@ -87,8 +90,10 @@ class Graph{
 		double GapCostV(vector<int>& order, set<int>& visited);
 		//void Transform();
 		vector<int> Transform();
+		void NDGorderGreedy(vector<int>& order, int window, vector<int>& candidate);
 		void GorderGreedy(vector<int>& order, int window, vector<int>& candidate);
 		void GorderSubGreedy(vector<int>& order, int window, vector<int>& candidate);
+		void GorderTestSubGreedy(vector<int>& order, int window, vector<int>& candidate, vector<int>& collected);
 
 		void RCMOrder(vector<int>& retorder);
     void ReRCMOrder(vector<int>& reorder);

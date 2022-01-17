@@ -5,7 +5,8 @@ MAX_THREAD=`expr $(($CORE*$HYPER))`
 GRAPH=$1
 SAMPLE_RATIO=$2
 PARALLEL=$3
-AVERAGE=$4
+RATIO=$4
+AVERAGE=$5
 if [ "$(($3+1))" -gt "$MAX_THREAD" ]
 then
   echo "Exceed Max Thread $MAX_THREAD"
@@ -13,42 +14,29 @@ else
   for i in `seq 1 $PARALLEL`
   do 
     echo "----[$i]----"
-    mpirun -np $(($i+1)) ./Gorder $GRAPH $SAMPLE_RATIO $i $AVERAGE
-    ./../ligra/utils/SNAPtoAdj $i"-sample.txt" $i".adj"
-    ./../ligra/apps/PageRank $i".adj" | grep -o "[0-9.]*" > $i."exectime"
-    #./../ligra/apps/PageRankDelta $i".adj"
-    #./../ligra/apps/BC $i".adj"
-    #./../ligra/apps/CF $i".adj"
-    #./../ligra/apps/KCore $i".adj"
-    rm $i"-sample.txt"
-    rm $i".adj"
+    mpirun -np $(($i+1)) ./SubGorder $GRAPH $SAMPLE_RATIO $i $RATIO $AVERAGE
+    for j in `seq 1 $AVERAGE`
+    do
+      ./../ligra/utils/SNAPtoAdj $i"-"$j"-sample.txt" $i"-"$j".adj"
+      ./../ligra/apps/PageRank $i"-"$j".adj" | grep -o "[0-9.]*" >> $i."exectime"
+    done
+    rm *sample.txt
+    rm *.adj
     if [ $i -eq 1 ]
     then
-      #echo "Original"
+      echo "Original"
       ./../ligra/utils/SNAPtoAdj "original.txt" "original.adj"
-      ./../ligra/apps/PageRank "original.adj" | grep -o "[0-9.]*" > "original.exectime"
-      #./../ligra/apps/PageRankDelta "original.adj"
-      #./../ligra/apps/BC "original.adj"
-      #./../ligra/apps/CF "original.adj"
-      #./../ligra/apps/KCore "original.adj"
+      ./../ligra/apps/PageRank "original.adj" | grep -o "[0-9.]*" >> "original.exectime"
       rm original.txt
       rm original.adj
       #echo "Sequential"
-      ./../ligra/utils/SNAPtoAdj "seq.txt" "seq.adj"
-      ./../ligra/apps/PageRank "seq.adj" | grep -o "[0-9.]*" > "seq.exectime"
-      #./../ligra/apps/PageRankDelta "seq.adj"
-      #./../ligra/apps/BC "seq.adj"
-      #./../ligra/apps/CF "seq.adj"
-      #./../ligra/apps/KCore "seq.adj"
+      #./../ligra/utils/SNAPtoAdj "seq.txt" "seq.adj"
+      #./../ligra/apps/PageRank "seq.adj" | grep -o "[0-9.]*" > "seq.exectime"
       rm seq.txt
       rm seq.adj
       #echo "Random"
       #./../ligra/utils/SNAPtoAdj "random.txt" "random.adj"
       #./../ligra/apps/PageRank "random.adj" | grep -o
-      #./../ligra/apps/PageRankDelta "random.adj"
-      #./../ligra/apps/BC "random.adj"
-      #./../ligra/apps/CF "random.adj"
-      #./../ligra/apps/KCore "random.adj"
       #rm random.txt
       #rm random.adj
     fi
@@ -56,8 +44,8 @@ else
     #mpirun -np $(($i+1)) ./Gorder-050 $GRAPH $SAMPLE_RATIO $i $AVERAGE
     #mpirun -np $(($i+1)) ./Gorder-075 $GRAPH $SAMPLE_RATIO $i $AVERAGE
   done
-  python3 evaluation.py $PARALLEL
+  #python3 evaluation.py $PARALLEL
   rm *.txt
   rm *.ans
-  rm *.exectime
+  #rm *.exectime
 fi

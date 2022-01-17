@@ -24,9 +24,6 @@
 using namespace std;
 using namespace Gorder;
 
-const int INPUTNUM=1;
-const int MSIZE = 10;
-
 int main(int argc, char* argv[]){
 	ios::sync_with_stdio(false);
 	int i;
@@ -36,27 +33,20 @@ int main(int argc, char* argv[]){
   rw_total = 0;
 	string filename;
 
-
-
 	if(argc==1){
 		cout << "please provide parameter" << endl;
 		quit();
 	}
 
   filename=argv[1];
-  //cout << filename << endl;
 	srand(time(0));
-	Graph g, sampled_g;
+	Graph g;
 	string name;
 	name=extractFilename(filename.c_str());
 	g.setFilename(name);
-	start=clock();
 	g.readGraph(filename);
   vector<int> original_order(g.vsize);
 	original_order = g.Transform();
-	//cout << name << " readGraph is complete." << endl;
-	end=clock();
-	//cout << "Time Cost: " << (double)(end-start)/CLOCKS_PER_SEC << endl;
   int max=-1;
   int start_node = -1;
   for (size_t i = 0; i < g.vsize; i++) {
@@ -76,11 +66,10 @@ int main(int argc, char* argv[]){
   set<int> visited;
   int sample_size = g.vsize * stof(argv[2]);
   int candidate_size = sample_size / stoi(argv[3]);
-  int execute_num = stoi(argv[4]);
+  int execute_num = stoi(argv[5]);
   vector<int> candidate, collected;
   vector<int> recv(candidate_size);
   vector<int> order, seqseq;
-  vector<int> retorder(g.vsize, -1);
   vector<double> gapvector, timevector;
   order.reserve(g.vsize);
   //retorder.reserve(g.vsize);
@@ -93,6 +82,7 @@ int main(int argc, char* argv[]){
 
   // pid 0's job
   while(execute_num-- != 0){
+    vector<int> retorder(g.vsize, -1);
     visited.clear();
     order.clear();
     order.reserve(g.vsize);
@@ -109,7 +99,7 @@ int main(int argc, char* argv[]){
 
       // RW
       while(check < stoi(argv[3])) {
-        rw_start = clock();
+        //rw_start = clock();
         while(candidate.size() != candidate_size) {
           next_node = g.outedge[g.graph[current_node].outstart + (engine() % g.graph[current_node].outdegree)];
           if (dist(engine) <= static_cast<double>(g.graph[current_node].outdegree) / g.graph[next_node].outdegree) {
@@ -128,7 +118,7 @@ int main(int argc, char* argv[]){
             continue;
           }
         }
-        rw_end = clock();
+        //rw_end = clock();
         rw_total += (double)(rw_end - rw_start);
         check++;
         MPI_Send(&candidate[0], candidate_size, MPI_INT, check, 0, MPI_COMM_WORLD);
@@ -149,13 +139,27 @@ int main(int argc, char* argv[]){
         MPI_Recv(&recv[0], candidate_size, MPI_INT, 0, 0, MPI_COMM_WORLD, &status);
         vector<int> recv_collected(collected_size);
         MPI_Recv(&recv_collected[0], collected_size, MPI_INT, 0, 0, MPI_COMM_WORLD, &status);
-        //Graph sub_g;
-        //g.SubGraph(sub_g, recv_collected);
+        Graph sub_g;
         //g.SubGraph(sub_g, recv);
+        //g.SubGraphTest(sub_g, recv_collected);
+        g.SubGraphTest(sub_g,recv,(double)stof(argv[4]));
+        //g.SubGraphTest2(sub_g,recv,(double)stof(argv[4]));
         vector<int> partial_order;
         partial_order.reserve(candidate_size);
-        g.GorderGreedy(partial_order, W, recv);
-        //sub_g.GorderSubGreedy(partial_order, W, recv);
+        //g.NDGorderGreedy(partial_order, W, recv);
+        sub_g.GorderSubGreedy(partial_order, W, recv);
+        //g.GorderGreedy(debug_order, W, recv);
+        //set<int> pset(partial_order.begin(), partial_order.end());
+        //set<int> recv_test(recv.begin(), recv.end());
+        //set<int> dset(debug_order.begin(), debug_order.end());
+        //set<int> result;
+        //set_intersection(pset.begin(), pset.end(), recv_test.begin(), recv_test.end(), inserter(result, result.end()));
+        //cout << "-----" << endl;
+        //cout << pset.size() << " " << recv.size() << " " << result.size() << endl;
+        //cout << "-----" << endl;
+        //g.GorderTestSubGreedy(partial_order, W, recv, recv_collected);
+        //g.GorderGreedy(partial_order, W, recv);
+        //cout << "TEST: " << partial_order.size() << endl;
         MPI_Send(&partial_order[0], candidate_size, MPI_INT, 0, 0, MPI_COMM_WORLD);
 
     }
@@ -166,31 +170,37 @@ int main(int argc, char* argv[]){
       timevector.push_back((double)(end-start)/CLOCKS_PER_SEC);
       //vector<int> retorder(g.vsize);
       int new_id = 0;
-      //cout << "Size: " << order.size() << endl;
       for(const auto v : order) {
         retorder[v] = new_id++;
       }
       gapvector.push_back(g.GapCostV(retorder, visited));
+      string tmp1(argv[3]);
+      string tmp2 = to_string(execute_num+1);
+      string output_graph = tmp1 + "-" + tmp2 + "-sample.txt";
+      ofstream outgraph(output_graph);
+      g.WriteSampleGraph(visited, retorder, outgraph);
       retorder.clear();
     }
-  }
+  } // end average loop
+
   if (pid==0) {
     string tmp(argv[3]);
     string output_file=tmp + "-.ans";
-    string output_graph = tmp + "-sample.txt";
+    //string output_graph = tmp + "-sample.txt";
     //string output_rwtime = "rw-time.txt";
     double gap_average=0;
     double time_average=0;
-    for (size_t i = 0; i < stoi(argv[4]); i++) {
+    for (size_t i = 0; i < stoi(argv[5]); i++) {
       gap_average += gapvector[i];
       time_average += timevector[i];
     }
     gap_average = gap_average/gapvector.size();
     time_average = time_average/timevector.size();
+    cout << "Gap: " << gap_average << " Time: " << time_average << endl;
     ofstream ans(output_file);
     ans << gap_average << " " << time_average;
-    ofstream outgraph(output_graph);
-    g.WriteSampleGraph(visited, retorder, outgraph);
+    //ofstream outgraph(output_graph);
+    //g.WriteSampleGraph(visited, retorder, outgraph);
     //ofstream rwtime(output_rwtime);
     //cout << rw_total << endl;
     //rwtime << rw_total/CLOCKS_PER_SEC;
