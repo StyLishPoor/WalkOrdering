@@ -55,17 +55,20 @@ int main(int argc, char* argv[]){
       start_node  = i;
     }
   }
-
+  
   // MPI Init
   int pid, nprocs;
   MPI_Status status;
   MPI_Init(&argc, &argv);
   MPI_Comm_rank(MPI_COMM_WORLD, &pid);
   MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
+
+  float p = stof(argv[4]);
+  int M = stoi(argv[3]);
   vector< pair<int, int> > path;
   set<int> visited;
   int sample_size = g.vsize * stof(argv[2]);
-  int candidate_size = sample_size / stoi(argv[3]);
+  int candidate_size = sample_size / M;
   int execute_num = stoi(argv[5]);
   vector<int> candidate, collected;
   vector<int> recv(candidate_size);
@@ -98,8 +101,7 @@ int main(int argc, char* argv[]){
       int check = 0;
 
       // RW
-      while(check < stoi(argv[3])) {
-        //rw_start = clock();
+      while(check < M) {
         while(candidate.size() != candidate_size) {
           next_node = g.outedge[g.graph[current_node].outstart + (engine() % g.graph[current_node].outdegree)];
           if (dist(engine) <= static_cast<double>(g.graph[current_node].outdegree) / g.graph[next_node].outdegree) {
@@ -118,12 +120,10 @@ int main(int argc, char* argv[]){
             continue;
           }
         }
-        //rw_end = clock();
-        rw_total += (double)(rw_end - rw_start);
         check++;
         MPI_Send(&candidate[0], candidate_size, MPI_INT, check, 0, MPI_COMM_WORLD);
-        vector<int> collected(visited.begin(), visited.end());
-        MPI_Send(&collected[0], candidate_size * check, MPI_INT, check, 0, MPI_COMM_WORLD);
+        //vector<int> collected(visited.begin(), visited.end());
+        //MPI_Send(&collected[0], candidate_size * check, MPI_INT, check, 0, MPI_COMM_WORLD);
         candidate.clear();
       }
       for (size_t i = 1; i < nprocs; i++) {
@@ -135,14 +135,14 @@ int main(int argc, char* argv[]){
         }
       }
     } else { // pid > 0 : Gorder process
-        int collected_size = candidate_size * pid;
+        //int collected_size = candidate_size * pid;
         MPI_Recv(&recv[0], candidate_size, MPI_INT, 0, 0, MPI_COMM_WORLD, &status);
-        vector<int> recv_collected(collected_size);
-        MPI_Recv(&recv_collected[0], collected_size, MPI_INT, 0, 0, MPI_COMM_WORLD, &status);
+        //vector<int> recv_collected(collected_size);
+        //MPI_Recv(&recv_collected[0], collected_size, MPI_INT, 0, 0, MPI_COMM_WORLD, &status);
         Graph sub_g;
         //g.SubGraph(sub_g, recv);
         //g.SubGraphTest(sub_g, recv_collected);
-        g.SubGraphTest(sub_g,recv,(double)stof(argv[4]));
+        g.SubGraphTest(sub_g,recv,p);
         //g.SubGraphTest2(sub_g,recv,(double)stof(argv[4]));
         vector<int> partial_order;
         partial_order.reserve(candidate_size);
@@ -210,44 +210,46 @@ int main(int argc, char* argv[]){
     }
     */
   }
-  if (pid==0 && stoi(argv[3])==1) {
-    vector<int> seq_retorder(g.vsize, -1);
-    //seq_retorder.reserve(g.vsize);
-    int new_id = 0;
-    for (const auto v : seqseq) {
-      seq_retorder[v] = new_id++;
-    }
-    //cout << "SEQ GAP" << endl;
-    g.GapCostV(seq_retorder, visited);
-    shuffle(seqseq.begin(), seqseq.end(), engine);
-    vector<int> random_retorder(g.vsize, -1);
-    //random_retorder.reserve(g.vsize);
-    new_id = 0;
-    for (const auto v : seqseq) {
-      random_retorder[v] = new_id++;
-    }
-    //cout << "RANDOM GAP" << endl;
-    g.GapCostV(random_retorder, visited);
+  if (pid==0 && M==1) {
+    //vector<int> seq_retorder(g.vsize, -1);
+    ////seq_retorder.reserve(g.vsize);
+    //int new_id = 0;
+    //for (const auto v : seqseq) {
+    //  seq_retorder[v] = new_id++;
+    //}
+    ////cout << "SEQ GAP" << endl;
+    //g.GapCostV(seq_retorder, visited);
+    ////shuffle(seqseq.begin(), seqseq.end(), engine);
+    //vector<int> random_retorder(g.vsize, -1);
+    ////random_retorder.reserve(g.vsize);
+    //new_id = 0;
+    //for (const auto v : seqseq) {
+    //  random_retorder[v] = new_id++;
+    //}
+    ////cout << "RANDOM GAP" << endl;
+    //g.GapCostV(random_retorder, visited);
     //vector<int> reorder;
     //reorder.reserve(g.vsize);
     //g.ReRCMOrder(reorder);
 
     ofstream original_graph("original.txt");
     g.WriteSampleGraph(visited, original_order, original_graph);
+    ofstream random_graph("random.txt");
+    g.WriteSampleRandomGraph(visited, random_graph);
     /*
     for (const auto edge : path) {
       original_graph << edge.first << " " << edge.second << endl;
     }
     */
-    ofstream seq_graph("seq.txt");
-    g.WriteSampleGraph(visited, seq_retorder, seq_graph);
-    /*
-    for (const auto edge : path) {
-      seq_graph << seq_retorder[edge.first] << " " << seq_retorder[edge.second] << endl;
-    }
-    */
-    ofstream random_graph("random.txt");
-    g.WriteSampleGraph(visited, random_retorder, random_graph);
+    //ofstream seq_graph("seq.txt");
+    //g.WriteSampleGraph(visited, seq_retorder, seq_graph);
+    ///*
+    //for (const auto edge : path) {
+    //  seq_graph << seq_retorder[edge.first] << " " << seq_retorder[edge.second] << endl;
+    //}
+    //*/
+    //ofstream random_graph("random.txt");
+    //g.WriteSampleGraph(visited, random_retorder, random_graph);
     /*
     for (const auto edge : path) {
       random_graph << random_retorder[edge.first] << " " << random_retorder[edge.second] << endl;

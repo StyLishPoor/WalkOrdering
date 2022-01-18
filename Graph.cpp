@@ -111,7 +111,7 @@ void Graph::SubGraphTest2(Graph& sub, const vector<int>& candidate, double p) {
 }
 
 void Graph::SubGraphTest(Graph& sub, const vector<int>& candidate, double p) {
-  clock_t sub_start = clock();
+  //clock_t sub_start = clock();
   vector<bool> exist(vsize, false);
   vector<bool> added_flag(vsize, false);
   //vector<int> added_candidate;
@@ -237,8 +237,8 @@ void Graph::SubGraphTest(Graph& sub, const vector<int>& candidate, double p) {
     sub.outedge[i]=edges[i].second;
     sub.inedge[i]=edges[i].second;
   }
-  clock_t sub_end = clock();
-  cout << "Sub Graph Construce: " << (double)(sub_end - sub_start)/CLOCKS_PER_SEC << endl;
+  //clock_t sub_end = clock();
+  //cout << "Sub Graph Construce: " << (double)(sub_end - sub_start)/CLOCKS_PER_SEC << endl;
 }
 
 void Graph::SubGraph(Graph& sub, const vector<int>& candidate) {
@@ -487,6 +487,31 @@ void Graph::WriteSampleGraph(set<int>& visited, vector<int>& retorder, ofstream&
       int v = outedge[i];
       if (exist[v]) {
         out << retorder[u] << " " << retorder[v] << endl;
+      }
+    }
+  }
+}
+
+void Graph::WriteSampleRandomGraph(set<int>& visited, ofstream& out) {
+  vector<bool> exist(vsize, false);
+  vector<int> random_retorder(vsize);
+  random_device seed_gen;
+  mt19937 engine(seed_gen());
+  for (size_t i = 0; i <= vsize; i++) {
+    random_retorder[i] = i;
+  }
+
+  shuffle(random_retorder.begin(), random_retorder.end(), engine);
+
+  for (const int u : visited) {
+    exist[u] = true;
+  }
+
+  for (const int u : visited) {
+    for (size_t i = graph[u].outstart; i < graph[u].outstart + graph[u].outdegree; i++) {
+      int v = outedge[i];
+      if (exist[v]) {
+        out << random_retorder[u] << " " << random_retorder[v] << endl;
       }
     }
   }
@@ -850,7 +875,7 @@ void Graph::GorderTestSubGreedy(vector<int>& order, int window, vector<int>& can
 }
 
 void Graph::GorderSubGreedy(vector<int>& order, int window, vector<int>& candidate){
-  clock_t start=clock();
+  //clock_t start=clock();
   UnitHeap unitheap(vsize, candidate);
   vector<bool> popvexist(vsize, false);
   int count=0;
@@ -970,8 +995,8 @@ void Graph::GorderSubGreedy(vector<int>& order, int window, vector<int>& candida
 			}
 		}
 	}
-  clock_t end=clock();
-  cout << "Greedy: " << (double)(end-start)/CLOCKS_PER_SEC << endl;
+  //clock_t end=clock();
+  //cout << "Greedy: " << (double)(end-start)/CLOCKS_PER_SEC << endl;
 }
 
 void Graph::GorderGreedy(vector<int>& order, int window, vector<int>& candidate){

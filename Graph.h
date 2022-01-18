@@ -79,6 +79,7 @@ class Graph{
     void SubGraph(Graph& sub, const vector<int>& candidate);
     void WriteSampleOriginalGraph(set<int>& visited, ofstream& out);
     void WriteSampleGraph(set<int>& visited, vector<int>& retorder, ofstream& out);
+    void WriteSampleRandomGraph(set<int>& visited, ofstream& out);
     //void SubGraph(Graph& sub, const set<int>& candidate);
 		
 		void strTrimRight(string& str);
