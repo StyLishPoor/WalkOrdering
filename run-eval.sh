@@ -19,6 +19,7 @@ else
     do
       ./../ligra/utils/SNAPtoAdj $i"-"$j"-sample.txt" $i"-"$j".adj"
       ./../ligra/apps/PageRank $i"-"$j".adj" | grep -o "[0-9.]*" >> $i."exectime"
+      #./../ligra/apps/PageRankDelta $i"-"$j".adj" | grep -o "[0-9.]*" >> $i."exectime"
     done
     rm *sample.txt
     rm *.adj
@@ -26,9 +27,11 @@ else
     then
       echo "Original"
       ./../ligra/utils/SNAPtoAdj "original.txt" "original.adj"
+      #./../ligra/apps/PageRankDelta "original.adj" | grep -o "[0-9.]*" >> "original.exectime"
       ./../ligra/apps/PageRank "original.adj" | grep -o "[0-9.]*" >> "original.exectime"
       echo "Random"
       ./../ligra/utils/SNAPtoAdj "random.txt" "random.adj"
+      #./../ligra/apps/PageRankDelta "random.adj" | grep -o "[0-9.]*" >> "random.exectime"
       ./../ligra/apps/PageRank "random.adj" | grep -o "[0-9.]*" >> "random.exectime"
       rm original.txt
       rm original.adj

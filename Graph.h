@@ -75,7 +75,7 @@ class Graph{
 		void GraphAnalysis();
 		void RemoveDuplicate(const string& fullname);
     void SubGraphTest(Graph& sub, const vector<int>& candidate, double p);
-    void SubGraphTest2(Graph& sub, const vector<int>& candidate, double p);
+    void SubGraphTest2(Graph& sub, const vector<int>& candidate);
     void SubGraph(Graph& sub, const vector<int>& candidate);
     void WriteSampleOriginalGraph(set<int>& visited, ofstream& out);
     void WriteSampleGraph(set<int>& visited, vector<int>& retorder, ofstream& out);
@@ -94,6 +94,7 @@ class Graph{
 		void NDGorderGreedy(vector<int>& order, int window, vector<int>& candidate);
 		void GorderGreedy(vector<int>& order, int window, vector<int>& candidate);
 		void GorderSubGreedy(vector<int>& order, int window, vector<int>& candidate);
+		void GorderSubGreedy2(vector<int>& order, int window, vector<int>& candidate, float p);
 		void GorderTestSubGreedy(vector<int>& order, int window, vector<int>& candidate, vector<int>& collected);
 
 		void RCMOrder(vector<int>& retorder);

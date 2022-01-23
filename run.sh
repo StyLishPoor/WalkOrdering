@@ -17,7 +17,7 @@ else
     mpirun -np $(($i+1)) ./SubGorder $GRAPH $SAMPLE_RATIO $i $RATIO $AVERAGE
     for j in `seq 1 $AVERAGE`
     do
-      ./../ligra/utils/SNAPtoAdj $i"-"$j"-sample.txt" $i"-"$j".adj"
+      ./../ligra/utils/SNAPtoAdj -s $i"-"$j"-sample.txt" $i"-"$j".adj"
       ./../ligra/apps/PageRank $i"-"$j".adj" | grep -o "[0-9.]*" >> $i."exectime"
     done
     rm *sample.txt

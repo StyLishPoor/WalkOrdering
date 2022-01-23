@@ -37,7 +37,7 @@ void Graph::setFilename(string name){
 }
 
 Graph::Graph() {
-	edgenum=vsize=0;
+	edgenum=vsize=vnum=0;
 }
 
 Graph::~Graph() {
@@ -45,6 +45,7 @@ Graph::~Graph() {
 
 void Graph::clear() {
 	vsize = 0;
+	vnum = 0;
 	edgenum=0;
 	name.clear();
 	graph.clear();
@@ -52,33 +53,87 @@ void Graph::clear() {
 	inedge.clear();
 }
 
-void Graph::SubGraphTest2(Graph& sub, const vector<int>& candidate, double p) {
-  clock_t sub_start = clock();
+//void Graph::SubGraphTest2(Graph& sub, const vector<int>& candidate, double p) {
+//  clock_t sub_start = clock();
+//  vector<bool> exist(vsize, false);
+//  for (const int v : candidate) {
+//    exist[v] = true;
+//  }
+//  //random_device seed_gen;
+//  //mt19937 engine {seed_gen()};
+//  //uniform_real_distribution<double> dist(0, 1);
+//  vector< pair<int, int> > edges;
+//  edges.reserve(10000000);
+//  for (size_t u = 0; u < vsize; u++) {
+//    for (size_t i = graph[u].outstart; i < graph[u].outstart + graph[u].outdegree; i++) {
+//      int v = outedge[i];
+//      if (exist[u]) {
+//        edges.push_back(make_pair(u, v));
+//      } else {
+//        if(exist[v]) {
+//          edges.push_back(make_pair(u, v));
+//        }
+//      }
+//    }
+//  }
+//  cout << "Edge Num: " << edges.size() << endl;
+//  sub.edgenum = edges.size();
+//  sub.vsize = vsize;
+//  sub.vnum = vsize;
+//  sub.graph.resize(vsize+1);
+//  for(long long i=0; i<edges.size(); i++){
+//    sub.graph[edges[i].first].outdegree++;
+//    sub.graph[edges[i].second].indegree++;
+//  }
+//  sub.graph[0].outstart=0;
+//  sub.graph[0].instart=0;
+//   for(int i=1; i<vsize; i++){
+//    sub.graph[i].outstart=sub.graph[i-1].outstart+sub.graph[i-1].outdegree;
+//    sub.graph[i].instart=sub.graph[i-1].instart+sub.graph[i-1].indegree;
+//  }
+// 
+//  sort(edges.begin(), edges.end(), [](const pair<int, int>& a, const pair<int, int>& b)->bool{
+//   if(a.first<b.first) return true;
+//   else if(a.first>b.first) return false;
+//   else {
+//     if(a.second<=b.second) return true;
+//     else return false;
+//   }
+//  });
+//
+//  sub.outedge.resize(sub.edgenum);
+//  sub.inedge.resize(sub.edgenum);
+//  for(long long i=0; i<edges.size(); i++){
+//    sub.outedge[i]=edges[i].second;
+//    sub.inedge[i]=edges[i].second;
+//  }
+//  clock_t sub_end = clock();
+//  cout << "Sub Graph Construce: " << (double)(sub_end - sub_start)/CLOCKS_PER_SEC << endl;
+//}
+
+void Graph::SubGraphTest2(Graph& sub, const vector<int>& candidate) {
   vector<bool> exist(vsize, false);
-  for (const int v : candidate) {
-    exist[v] = true;
-  }
-  //random_device seed_gen;
-  //mt19937 engine {seed_gen()};
-  //uniform_real_distribution<double> dist(0, 1);
   vector< pair<int, int> > edges;
   edges.reserve(10000000);
-  for (size_t u = 0; u < vsize; u++) {
+
+  for (const int u : candidate) {
+    exist[u] = true;
+  }
+
+  // ノード集合を選んでから全部にエッジを張るパターン
+  for (const int u : candidate) {
     for (size_t i = graph[u].outstart; i < graph[u].outstart + graph[u].outdegree; i++) {
       int v = outedge[i];
-      if (exist[u]) {
+      if (exist[v]) {
         edges.push_back(make_pair(u, v));
-      } else {
-        if(exist[v]) {
-          edges.push_back(make_pair(u, v));
-        }
       }
     }
   }
-  cout << "Edge Num: " << edges.size() << endl;
+
   sub.edgenum = edges.size();
   sub.vsize = vsize;
-  sub.vnum = vsize;
+  sub.vnum = candidate.size();
+  //sub.vnum = added_candidate.size();
   sub.graph.resize(vsize+1);
   for(long long i=0; i<edges.size(); i++){
     sub.graph[edges[i].first].outdegree++;
@@ -86,7 +141,7 @@ void Graph::SubGraphTest2(Graph& sub, const vector<int>& candidate, double p) {
   }
   sub.graph[0].outstart=0;
   sub.graph[0].instart=0;
-   for(int i=1; i<vsize; i++){
+  for(int i=1; i<vsize; i++){
     sub.graph[i].outstart=sub.graph[i-1].outstart+sub.graph[i-1].outdegree;
     sub.graph[i].instart=sub.graph[i-1].instart+sub.graph[i-1].indegree;
   }
@@ -106,8 +161,6 @@ void Graph::SubGraphTest2(Graph& sub, const vector<int>& candidate, double p) {
     sub.outedge[i]=edges[i].second;
     sub.inedge[i]=edges[i].second;
   }
-  clock_t sub_end = clock();
-  cout << "Sub Graph Construce: " << (double)(sub_end - sub_start)/CLOCKS_PER_SEC << endl;
 }
 
 void Graph::SubGraphTest(Graph& sub, const vector<int>& candidate, double p) {
@@ -337,6 +390,11 @@ void Graph::readGraph(const string& fullname) {
 		graph[edges[i].first].outdegree++;
 		graph[edges[i].second].indegree++;
 	}
+
+  vnum = 0;
+  for(size_t i = 0; i < vsize; i++) {
+    if(graph[i].outdegree != 0) vnum++;
+  }
 	graph[0].outstart=0;
 	graph[0].instart=0;
 	for(int i=1; i<vsize; i++){
@@ -501,7 +559,9 @@ void Graph::WriteSampleRandomGraph(set<int>& visited, ofstream& out) {
     random_retorder[i] = i;
   }
 
+  cout << "Before Shuffle" << endl;
   shuffle(random_retorder.begin(), random_retorder.end(), engine);
+  cout << "After Shuffle" << endl;
 
   for (const int u : visited) {
     exist[u] = true;
@@ -515,6 +575,7 @@ void Graph::WriteSampleRandomGraph(set<int>& visited, ofstream& out) {
       }
     }
   }
+  cout << "Safe" << endl;
 }
 
 
@@ -874,8 +935,134 @@ void Graph::GorderTestSubGreedy(vector<int>& order, int window, vector<int>& can
   cout << "Greedy: " << (double)(end-start)/CLOCKS_PER_SEC << endl;
 }
 
+void Graph::GorderSubGreedy2(vector<int>& order, int window, vector<int>& candidate, float p){
+  //clock_t start = clock();
+  UnitHeap unitheap(vsize, candidate);
+  vector<bool> popvexist(vsize, false);
+  int count=0;
+  int finish_num = candidate.size() - 1;
+  int tmpindex, tmpweight;
+  //const int hugevertex=sqrt((double)vsize);
+  const int hugevertex=p*sqrt((double)vnum);
+  //cout << "Vnum: " << vnum << " Huge: " << hugevertex << endl;
+  tmpweight=-1;
+  for(const auto i : candidate){
+    unitheap.LinkedList[i].key=graph[i].indegree;
+    unitheap.update[i]=-graph[i].indegree;
+    if(graph[i].indegree>tmpweight) {
+      tmpweight=graph[i].indegree;
+      tmpindex=i;
+    }
+  }
+  unitheap.ReConstruct(candidate);
+  order.push_back(tmpindex);
+  unitheap.update[tmpindex]=INT_MAX/2;
+  unitheap.DeleteElement(tmpindex);
+  // Initial Increment
+  for(int i=graph[tmpindex].instart, limit1=graph[tmpindex+1].instart; i<limit1; i++){
+    int u=inedge[i];
+    if(graph[u].outdegree<=hugevertex){
+      if(unitheap.update[u]==0){
+        unitheap.IncrementKey(u);
+      } else {
+        unitheap.update[u]++;
+      }
+      if(graph[u].outdegree>1)
+      for(int j=graph[u].outstart, limit2=graph[u+1].outstart; j<limit2; j++){
+        int w=outedge[j];
+        if(unitheap.update[w]==0){
+          unitheap.IncrementKey(w);
+        } else {
+          unitheap.update[w]++;
+        }
+      }
+    }
+  }
+  if(graph[tmpindex].outdegree<=hugevertex){
+    for(int i=graph[tmpindex].outstart, limit1=graph[tmpindex+1].outstart; i<limit1; i++){
+      int w=outedge[i];
+      if(unitheap.update[w]==0){
+        unitheap.IncrementKey(w);
+      }else{
+        unitheap.update[w]++;
+      }
+    }
+  }
+  while(count<finish_num){
+    int v=unitheap.ExtractMax();
+    count++;
+    order.push_back(v);
+    unitheap.update[v]=INT_MAX/2;
+    int popv;
+    if(count-window>=0)
+      popv=order[count-window];
+    else
+      popv=-1;
+    // Decrement
+		if(popv>=0){
+			if(graph[popv].outdegree<=hugevertex){
+				for(int i=graph[popv].outstart, limit1=graph[popv+1].outstart; i<limit1; i++){
+					int w=outedge[i];
+					unitheap.update[w]--;
+				}
+			}
+			for(int i=graph[popv].instart, limit1=graph[popv+1].instart; i<limit1; i++){
+				int u=inedge[i];
+				if(graph[u].outdegree<=hugevertex){
+					unitheap.update[u]--;
+					if(graph[u].outdegree>1)
+					if(binary_search(outedge.data() + graph[u].outstart, outedge.data() + graph[u+1].outstart, v)==false){
+						for(int j=graph[u].outstart, limit2=graph[u+1].outstart; j<limit2; j++){
+							int w=outedge[j];
+							unitheap.update[w]--;
+						}
+					} else {
+						popvexist[u]=true;
+					}
+				}
+			}
+		}
+    // Increment
+		if(graph[v].outdegree<=hugevertex){
+			for(int i=graph[v].outstart, limit1=graph[v+1].outstart; i<limit1; i++){
+				int w=outedge[i];
+				if(unlikely(unitheap.update[w]==0)){
+					unitheap.IncrementKey(w);
+				} else {
+					unitheap.update[w]++;
+				}
+			}
+		}
+		for(int i=graph[v].instart, limit1=graph[v+1].instart; i<limit1; i++){
+			int u=inedge[i];
+			if(graph[u].outdegree<=hugevertex){
+				if(unlikely(unitheap.update[u]==0)){
+					unitheap.IncrementKey(u);
+				} else {
+					unitheap.update[u]++;
+				}
+				if(popvexist[u]==false){
+					if(graph[u].outdegree>1)
+					for(int j=graph[u].outstart, limit2=graph[u+1].outstart; j<limit2; j++){
+						int w=outedge[j];
+						if(unlikely(unitheap.update[w]==0)){
+							unitheap.IncrementKey(w);
+						}else{
+							unitheap.update[w]++;
+						}
+					}
+				} else {
+					popvexist[u]=false;
+				}
+			}
+		}
+	}
+  //clock_t end = clock();
+  //cout << "Reorder: " << (double)(end - start)/CLOCKS_PER_SEC << endl;
+}
+
 void Graph::GorderSubGreedy(vector<int>& order, int window, vector<int>& candidate){
-  //clock_t start=clock();
+  clock_t start=clock();
   UnitHeap unitheap(vsize, candidate);
   vector<bool> popvexist(vsize, false);
   int count=0;
@@ -995,8 +1182,9 @@ void Graph::GorderSubGreedy(vector<int>& order, int window, vector<int>& candida
 			}
 		}
 	}
-  //clock_t end=clock();
-  //cout << "Greedy: " << (double)(end-start)/CLOCKS_PER_SEC << endl;
+  clock_t end=clock();
+  cout << "Greedy: " << (double)(end-start)/CLOCKS_PER_SEC << endl;
+  cout << "Average Degree: " << (double)edgenum/vnum << endl;
 }
 
 void Graph::GorderGreedy(vector<int>& order, int window, vector<int>& candidate){

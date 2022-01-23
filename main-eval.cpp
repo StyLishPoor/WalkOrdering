@@ -38,13 +38,22 @@ int main(int argc, char* argv[]){
 		quit();
 	}
 
+  // MPI Init
+  int pid, nprocs;
+  MPI_Status status;
+  MPI_Init(&argc, &argv);
+  MPI_Comm_rank(MPI_COMM_WORLD, &pid);
+  MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
   filename=argv[1];
 	srand(time(0));
 	Graph g;
 	string name;
 	name=extractFilename(filename.c_str());
 	g.setFilename(name);
+  //clock_t tmp_start = clock();
 	g.readGraph(filename);
+  //clock_t tmp_end = clock();
+  //cout << "Read Time: " << (double)(tmp_end - tmp_start)/CLOCKS_PER_SEC << endl;
   vector<int> original_order(g.vsize);
 	original_order = g.Transform();
   int max=-1;
@@ -56,22 +65,17 @@ int main(int argc, char* argv[]){
     }
   }
   
-  // MPI Init
-  int pid, nprocs;
-  MPI_Status status;
-  MPI_Init(&argc, &argv);
-  MPI_Comm_rank(MPI_COMM_WORLD, &pid);
-  MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
 
   bool rw_time_flag = true;
   float p = stof(argv[4]);
   int M = stoi(argv[3]);
-  vector< pair<int, int> > path;
+  //vector< pair<int, int> > path;
   set<int> visited;
-  int sample_size = g.vsize * stof(argv[2]);
+  int sample_size = g.vnum * stof(argv[2]);
   int candidate_size = sample_size / M;
   int execute_num = stoi(argv[5]);
-  vector<int> candidate, collected;
+  vector<int> candidate;
+  //vector<int> collected;
   vector<int> recv(candidate_size);
   vector<int> order;
   //vector<int> seqseq;
@@ -168,26 +172,11 @@ int main(int argc, char* argv[]){
         //vector<int> recv_collected(collected_size);
         //MPI_Recv(&recv_collected[0], collected_size, MPI_INT, 0, 0, MPI_COMM_WORLD, &status);
         Graph sub_g;
-        //g.SubGraph(sub_g, recv);
-        //g.SubGraphTest(sub_g, recv_collected);
         g.SubGraphTest(sub_g,recv,p);
         //g.SubGraphTest2(sub_g,recv,(double)stof(argv[4]));
         vector<int> partial_order;
         partial_order.reserve(candidate_size);
-        //g.NDGorderGreedy(partial_order, W, recv);
         sub_g.GorderSubGreedy(partial_order, W, recv);
-        //g.GorderGreedy(debug_order, W, recv);
-        //set<int> pset(partial_order.begin(), partial_order.end());
-        //set<int> recv_test(recv.begin(), recv.end());
-        //set<int> dset(debug_order.begin(), debug_order.end());
-        //set<int> result;
-        //set_intersection(pset.begin(), pset.end(), recv_test.begin(), recv_test.end(), inserter(result, result.end()));
-        //cout << "-----" << endl;
-        //cout << pset.size() << " " << recv.size() << " " << result.size() << endl;
-        //cout << "-----" << endl;
-        //g.GorderTestSubGreedy(partial_order, W, recv, recv_collected);
-        //g.GorderGreedy(partial_order, W, recv);
-        //cout << "TEST: " << partial_order.size() << endl;
         MPI_Send(&partial_order[0], candidate_size, MPI_INT, 0, 0, MPI_COMM_WORLD);
 
     }
@@ -214,8 +203,6 @@ int main(int argc, char* argv[]){
   if (pid==0) {
     string tmp(argv[3]);
     string output_file=tmp + "-.ans";
-    //string output_graph = tmp + "-sample.txt";
-    //string output_rwtime = "rw-time.txt";
     double gap_average=0;
     double time_average=0;
     for (size_t i = 0; i < stoi(argv[5]); i++) {
@@ -224,21 +211,22 @@ int main(int argc, char* argv[]){
     }
     gap_average = gap_average/gapvector.size();
     time_average = time_average/timevector.size();
-    //cout << "Gap: " << gap_average << " Time: " << time_average << endl;
     ofstream ans(output_file);
     ans << gap_average << " " << time_average;
-    //ofstream outgraph(output_graph);
-    //g.WriteSampleGraph(visited, retorder, outgraph);
-    //ofstream rwtime(output_rwtime);
-    //cout << rw_total << endl;
-    //rwtime << rw_total/CLOCKS_PER_SEC;
-    /*
-    for (const auto edge : path) {
-      outgraph << retorder[edge.first] << " " << retorder[edge.second] << endl;
+
+    if (M==1) {
+      ofstream original_graph("original.txt");
+      g.WriteSampleGraph(visited, original_order, original_graph);
+      vector<int> random_retorder(g.vsize);
+      for (size_t i = 0; i <= g.vsize; i++) {
+        random_retorder[i] = i;
+      }
+      shuffle(random_retorder.begin(), random_retorder.end(), engine);
+      ofstream random_graph("random.txt");
+      g.WriteSampleGraph(visited, random_retorder, random_graph);
     }
-    */
   }
-  if (pid==0 && M==1) {
+  //if (pid==0 && M==1) {
     //vector<int> seq_retorder(g.vsize, -1);
     ////seq_retorder.reserve(g.vsize);
     //int new_id = 0;
@@ -260,10 +248,18 @@ int main(int argc, char* argv[]){
     //reorder.reserve(g.vsize);
     //g.ReRCMOrder(reorder);
 
-    ofstream original_graph("original.txt");
-    g.WriteSampleGraph(visited, original_order, original_graph);
-    ofstream random_graph("random.txt");
-    g.WriteSampleRandomGraph(visited, random_graph);
+    //cout << "Last start" <<endl;
+    //ofstream original_graph("original.txt");
+    //g.WriteSampleGraph(visited, original_order, original_graph);
+    //cout << "Mid" << endl;
+    //vector<int> random_retorder(g.vsize);
+    //for (size_t i = 0; i <= g.vsize; i++) {
+    //  random_retorder[i] = i;
+    //}
+    //shuffle(random_retorder.begin(), random_retorder.end(), engine);
+    //ofstream random_graph("random.txt");
+    //g.WriteSampleGraph(visited, random_retorder, random_graph);
+    //cout << "Last end" <<endl;
     /*
     for (const auto edge : path) {
       original_graph << edge.first << " " << edge.second << endl;
@@ -283,6 +279,6 @@ int main(int argc, char* argv[]){
       random_graph << random_retorder[edge.first] << " " << random_retorder[edge.second] << endl;
     }
     */
-  }
+  //}
   MPI_Finalize();
 }
